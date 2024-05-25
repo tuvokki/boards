@@ -1,0 +1,16 @@
+bitarray==2.9.2
+bitstring==4.2.3
+cffi==1.16.0
+cryptography==42.0.7
+ecdsa==0.19.0
+esptool==4.7.0
+intelhex==2.3.0
+pycparser==2.22
+pyserial==3.5
+pyudev==0.24.3
+PyYAML==6.0.1
+reedsolo==1.7.0
+rshell==0.0.32
+six==1.16.0
+ble-serial==2.8.0
+bleak==0.22.1
