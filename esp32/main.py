@@ -1,11 +1,13 @@
+from machine import PWM, Pin
+
 from libs import RGBLed
-from temperature_sensor import TemperatureSensor
-from utils import *
+from libs.servo import Servo
+from utils import flash
 
 flash()
 
 myRGB = RGBLed(23, 22, 21)
+motor = Servo(pin=15)
 
-temperature_sensor = TemperatureSensor(sensor_pin=4)
-temperature_sensor.continuous_temp_read = False
-
+motor.move(90)  # start servo à 90°
+pwm = PWM(Pin(18, Pin.OUT))

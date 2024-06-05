@@ -15,7 +15,7 @@ class RGBLed:
     def __init__(self,
                  red_pin, green_pin, blue_pin,
                  ledType='anode',
-                 currentValueR=0, currentValueG=255, currentValueB=0):
+                 currentValueR=0, currentValueG=0, currentValueB=0):
         self.red_pin = red_pin
         self.green_pin = green_pin
         self.blue_pin = blue_pin
@@ -63,6 +63,15 @@ class RGBLed:
 
     def off(self):
         self.setColor(0, 0, 0)
+
+    def red(self):
+        self.setColor(255, 0, 0)
+
+    def green(self):
+        self.setColor(0, 255, 0)
+
+    def blue(self):
+        self.setColor(0, 0, 255)
 
     def white(self):
         self.setColor(255, 255, 255)
@@ -133,3 +142,42 @@ class RGBLed:
         self.currentValueG = g
         self.currentValueB = b
         self.setColor(r, g, b)
+
+    def test(self):
+        self.red()
+        utime.sleep(0.5)
+        self.green()
+        utime.sleep(0.5)
+        self.blue()
+        utime.sleep(0.5)
+        self.white()
+        utime.sleep(0.5)
+        self.cyan()
+        utime.sleep(0.5)
+        self.yellow()
+        utime.sleep(0.5)
+        self.magenta()
+        utime.sleep(0.5)
+        self.slowSet(255, 0, 0)
+        utime.sleep(0.1)
+        self.slowSet(0, 255, 0)
+        utime.sleep(0.1)
+        self.slowSet(0, 0, 255)
+        utime.sleep(0.5)
+        self.off()
+        utime.sleep(0.2)
+        self.red()
+        utime.sleep(0.2)
+        self.white()
+        utime.sleep(0.2)
+        self.blue()
+        utime.sleep(0.2)
+        self.off()
+        utime.sleep(0.2)
+        self.red()
+        utime.sleep(0.2)
+        self.white()
+        utime.sleep(0.2)
+        self.blue()
+        utime.sleep(0.2)
+        self.off()

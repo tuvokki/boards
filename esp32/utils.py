@@ -8,5 +8,3 @@ def flash(pin: Pin = onboard_led, duration: float = 1.0):
     pin.on()
     sleep(duration)
     pin.off()
-
-

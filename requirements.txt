@@ -14,3 +14,5 @@ rshell==0.0.32
 six==1.16.0
 ble-serial==2.8.0
 bleak==0.22.1
+micropython-esp32-stubs==1.22.0.post1
+micropython-stdlib-stubs==1.1.2
