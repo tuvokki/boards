@@ -5,7 +5,8 @@ from bleak import BleakScanner, BleakClient
 log_level = logging.INFO
 logging.basicConfig(
     level=log_level,
-    format="%(asctime)-15s %(name)-8s %(levelname)s: %(message)s",
+    # format="%(asctime)-15s %(name)-8s %(levelname)s: %(message)s",
+    format="%(levelname)s: %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -66,6 +67,7 @@ async def test(address, action: str = "beep"):
         logger.debug("disconnecting...")
 
 
+runtests = False
 esp32_device = "Hello32"
 device = asyncio.run(device_by_name(esp32_device))
 if not device:
@@ -73,12 +75,15 @@ if not device:
     logger.info("Scanning all devices:")
     asyncio.run(list_devices())
 else:
-    # logger.info(f"connecting to {device.name}")
-    # asyncio.run(main(device.address))
-    # logger.info("disconnected")
-    logger.info(f"test connecting to {device.name}")
-    asyncio.run(test(device.address, "toggle_led"))
-    asyncio.run(test(device.address, "nothing"))
-    asyncio.run(test(device.address))
-    asyncio.run(test(device.address, "toggle_led"))
-    logger.info("test disconnected")
+    if runtests:
+        logger.info(f"test connecting to {device.name}")
+        asyncio.run(test(device.address, "toggle_led"))
+        asyncio.run(test(device.address, "blink_led"))
+        asyncio.run(test(device.address, "nothing"))
+        asyncio.run(test(device.address))
+        asyncio.run(test(device.address, "toggle_led"))
+        logger.info("test disconnected")
+    else:
+        logger.info(f"connecting to {device.name}")
+        asyncio.run(main(device.address))
+        logger.info("disconnected")
