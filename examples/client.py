@@ -77,11 +77,15 @@ if not device:
 else:
     if runtests:
         logger.info(f"test connecting to {device.name}")
-        asyncio.run(test(device.address, "toggle_led"))
-        asyncio.run(test(device.address, "blink_led"))
-        asyncio.run(test(device.address, "nothing"))
-        asyncio.run(test(device.address))
-        asyncio.run(test(device.address, "toggle_led"))
+        asyncio.run(test(device.address, "Run tests"))
+        asyncio.run(test(device.address, "beep"))
+        asyncio.run(test(device.address, "led:yellow:on"))
+        asyncio.run(test(device.address, "led:yellow:off"))
+        asyncio.run(test(device.address, "beep:2"))
+        asyncio.run(test(device.address, "led:yellow:on"))
+        asyncio.run(test(device.address, "wait"))
+        asyncio.run(test(device.address, "led:yellow:toggle"))
+        asyncio.run(test(device.address, "Stop tests"))
         logger.info("test disconnected")
     else:
         logger.info(f"connecting to {device.name}")

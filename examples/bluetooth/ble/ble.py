@@ -1,83 +1,76 @@
-import time
 import bluetooth
-from machine import Pin
+
+from micropython import const
+
+from .ble_advertising import advertising_payload
+
+_IRQ_CENTRAL_CONNECT = const(1)
+_IRQ_CENTRAL_DISCONNECT = const(2)
+_IRQ_GATTS_WRITE = const(3)
+
+_FLAG_READ = const(0x0002)
+_FLAG_WRITE_NO_RESPONSE = const(0x0004)
+_FLAG_WRITE = const(0x0008)
+_FLAG_NOTIFY = const(0x0010)
+
+_UART_UUID = bluetooth.UUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
+_UART_TX = (
+    bluetooth.UUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E"),
+    _FLAG_READ | _FLAG_NOTIFY,
+)
+_UART_RX = (
+    bluetooth.UUID("6E400002-B5A3-F393-E0A9-E50E24DCCA9E"),
+    _FLAG_WRITE | _FLAG_WRITE_NO_RESPONSE,
+)
+_UART_SERVICE = (
+    _UART_UUID,
+    (_UART_TX, _UART_RX),
+)
 
 
 class BLE:
-    def __init__(self, name, debug: bool = False):
-        self.beep_time = 0.5
-        self.name = name
-        self.debug = debug
-        self.ble = bluetooth.BLE()
-        self.ble.active(True)
+    def __init__(self, name="mpy-uart"):
+        self.debug = False
+        self._ble = bluetooth.BLE()
+        self._ble.active(True)
+        self._ble.irq(self._irq)
+        ((self._handle_tx, self._handle_rx),) = self._ble.gatts_register_services((_UART_SERVICE,))
+        self._connections = set()
+        self._write_callback = None
+        self._payload = advertising_payload(name=name, services=[_UART_UUID])
+        self._advertise()
 
-        self.led = Pin(2, Pin.OUT)
-        self.horn = Pin(19, Pin.OUT)
-
-        self.disconnected()
-        self.ble.irq(self.ble_irq)
-        self.register()
-        self.advertiser()
-
-    def connected(self):
-        self.led(1)
-
-    def disconnected(self):
-        self.led(0)
-
-    def ble_irq(self, event, data):
-        if self.debug:
-            print(f"Received BLE irq event: [{event}]\n\twith data: {data}")
-
-        if event == 1:
-            """Central disconnected"""
-            self.connected()
-
-        elif event == 2:
-            """Central disconnected"""
-            self.advertiser()
-            self.disconnected()
-
-        elif event == 3:
-            buffer = self.ble.gatts_read(self.rx)
-            message = buffer.decode("UTF-8").strip()
-            if message == "toggle_led":
-                if self.debug:
-                    print(f"toggle_led: {self.led}")
-                self.led.value(not self.led.value())
-                self.send(f"Led {self.led} is now {self.led.value()}")
-            elif message == "blink_led":
-                if self.debug:
-                    print(f"blink_led {self.led}")
-                for _ in range(10):
-                    self.led.value(not self.led.value())
-                    time.sleep(0.2)
-            elif message == "beep":
-                if self.debug:
-                    print(f"beep for {self.beep_time}")
-                self.horn.on()
-                time.sleep(self.beep_time)
-                self.horn.off()
-            else:
-                print(f"fReceived unknown event:\n\tmessage: {message}")
-
-    def register(self):
-        # Nordic UART Service (NUS)
-        NUS_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
-        RX_UUID = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
-        TX_UUID = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
-
-        BLE_NUS = bluetooth.UUID(NUS_UUID)
-        BLE_RX = (bluetooth.UUID(RX_UUID), bluetooth.FLAG_WRITE)
-        BLE_TX = (bluetooth.UUID(TX_UUID), bluetooth.FLAG_NOTIFY)
-
-        BLE_UART = (BLE_NUS, (BLE_TX, BLE_RX,))
-        SERVICES = (BLE_UART,)
-        ((self.tx, self.rx,),) = self.ble.gatts_register_services(SERVICES)
+    def _irq(self, event, data):
+        # Track connections so we can send notifications.
+        if event == _IRQ_CENTRAL_CONNECT:
+            conn_handle, _, _ = data
+            if self.debug:
+                print("New connection", conn_handle)
+            self._connections.add(conn_handle)
+        elif event == _IRQ_CENTRAL_DISCONNECT:
+            conn_handle, _, _ = data
+            if self.debug:
+                print("Disconnected", conn_handle)
+            self._connections.remove(conn_handle)
+            # Start advertising again to allow a new connection.
+            self._advertise()
+        elif event == _IRQ_GATTS_WRITE:
+            conn_handle, value_handle = data
+            value = self._ble.gatts_read(value_handle)
+            if value_handle == self._handle_rx and self._write_callback:
+                self._write_callback(value)
 
     def send(self, data):
-        self.ble.gatts_notify(0, self.tx, data + "\n")
+        for conn_handle in self._connections:
+            self._ble.gatts_notify(conn_handle, self._handle_tx, data)
 
-    def advertiser(self):
-        name = bytes(self.name, "UTF-8")
-        self.ble.gap_advertise(100, bytearray("\x02\x01\x02", "UTF-8") + bytearray((len(name) + 1, 0x09), "UTF-8") + name)
+    def is_connected(self):
+        return len(self._connections) > 0
+
+    def _advertise(self, interval_us=500000):
+        if self.debug:
+            print("Starting advertising")
+        self._ble.gap_advertise(interval_us, adv_data=self._payload)
+
+    def on_write(self, callback):
+        self._write_callback = callback
