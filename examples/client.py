@@ -67,7 +67,7 @@ async def test(address, action: str = "beep"):
         logger.debug("disconnecting...")
 
 
-runtests = False
+runtests = True
 esp32_device = "Hello32"
 device = asyncio.run(device_by_name(esp32_device))
 if not device:
