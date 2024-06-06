@@ -42,12 +42,7 @@ async def main(address):
                 if "write-without-response" in char.properties:
                     extra += f", Max write w/o rsp size: {char.max_write_without_response_size}"
 
-                logger.info(
-                    "  [Characteristic] %s (%s)%s",
-                    char,
-                    ",".join(char.properties),
-                    extra,
-                )
+                logger.info("  [Characteristic] %s (%s)%s", char, ",".join(char.properties), extra, )
 
                 for descriptor in char.descriptors:
                     try:
@@ -59,13 +54,31 @@ async def main(address):
         logger.info("disconnecting...")
 
 
-tank = "TANK32"
-device = asyncio.run(device_by_name(tank))
+async def test(address, action: str = "beep"):
+    logger.info(f"Performing action {action} on address {address}")
+    async with BleakClient(address) as client:
+        logger.debug("connected")
+        for service in client.services:
+            logger.debug("[Service] %s", service)
+            for char in service.characteristics:
+                if "write" in char.properties:
+                    await client.write_gatt_char(char.handle, bytearray(bytes(action, "utf-8")))
+        logger.debug("disconnecting...")
+
+
+esp32_device = "Hello32"
+device = asyncio.run(device_by_name(esp32_device))
 if not device:
-    logger.info(f"Device not found: {tank}")
+    logger.info(f"Device not found: {esp32_device}")
     logger.info("Scanning all devices:")
     asyncio.run(list_devices())
 else:
-    logger.info(f"connecting to {device.name}")
-    asyncio.run(main(device.address))
-    logger.info("disconnected")
+    # logger.info(f"connecting to {device.name}")
+    # asyncio.run(main(device.address))
+    # logger.info("disconnected")
+    logger.info(f"test connecting to {device.name}")
+    asyncio.run(test(device.address, "toggle_led"))
+    asyncio.run(test(device.address, "nothing"))
+    asyncio.run(test(device.address))
+    asyncio.run(test(device.address, "toggle_led"))
+    logger.info("test disconnected")
